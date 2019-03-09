@@ -363,6 +363,7 @@ class Db
   def cmd_hosts(*args)
     return unless active?
     onlyup = false
+    show_count = false
     set_rhosts = false
     mode = []
     delete_count = 0
@@ -429,7 +430,6 @@ class Db
         if (arg == '-C')
           @@hosts_columns = col_search
         end
-
       when '-u','--up'
         onlyup = true
       when '-o'
@@ -473,10 +473,13 @@ class Db
         print_line "  -n,--name         Change the name of a host"
         print_line "  -m,--comment      Change the comment of a host"
         print_line "  -t,--tag          Add or specify a tag to a range of hosts"
+        print_line "  --count           Show host count after search results"
         print_line
         print_line "Available columns: #{default_columns.join(", ")}"
         print_line
         return
+      when '--count'
+        show_count = true
       else
         # Anything that wasn't an option is a host to search for
         unless (arg_host_range(arg, host_ranges))
@@ -593,6 +596,10 @@ class Db
       print_line(tbl.to_s)
     end
 
+    if (show_count)
+      print_line("Host count: #{matched_host_ids.length}")
+    end
+
     # Finally, handle the case where the user wants the resulting list
     # of hosts to go into RHOSTS.
     set_rhosts_from_addrs(rhosts.uniq) if set_rhosts
@@ -610,6 +617,7 @@ class Db
     return unless active?
     mode = :search
     onlyup = false
+    show_count = false
     output_file = nil
     set_rhosts = false
     col_search = ['port', 'proto', 'name', 'state', 'info']
@@ -653,6 +661,8 @@ class Db
               return
             end
           }
+        when '--count'
+          show_count = true
         when '-p'
           unless (arg_port_range(args.shift, port_ranges, true))
             return
@@ -705,6 +715,7 @@ class Db
           print_line "  -R,--rhosts       Set RHOSTS from the results of the search"
           print_line "  -S,--search       Search string to filter by"
           print_line "  -U,--update       Update data for existing service"
+          print_line "  --count           Show service count after search results"
           print_line
           print_line "Available columns: #{default_columns.join(", ")}"
           print_line
@@ -803,6 +814,10 @@ class Db
       # create the output file
       ::File.open(output_file, "wb") { |f| f.write(tbl.to_csv) }
       print_status("Wrote services to #{output_file}")
+    end
+
+    if (show_count)
+      print_line("Service count: #{matched_service_ids.length}")
     end
 
     # Finally, handle the case where the user wants the resulting list
